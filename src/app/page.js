@@ -5,12 +5,31 @@ import { supabase } from '@/lib/supabase'
 
 const STATUSES = ["Lead", "Consultation", "Applied", "Offer", "Deposit Paid", "Enrolled", "Lost"]
 const SOURCES = ["Referral", "Xiaohongshu", "Wechat", "Walk-in", "Website", "Friend", "Other"]
+const COUNSELLORS = ["David", "Ming", "Jett"]
+
+// 简单的密码验证
+function verifyLogin(name, password) {
+  if (name === "Manager" && password === "admin123") {
+    return { role: "manager", counsellor: null }
+  }
+  if (COUNSELLORS.includes(name) && password === "123456") {
+    return { role: "counsellor", counsellor: name }
+  }
+  return null
+}
 
 export default function Home() {
+  // 登录状态
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [loginForm, setLoginForm] = useState({ name: "", password: "" })
+  const [loginError, setLoginError] = useState("")
+  
+  // 用户信息
+  const [user, setUser] = useState({ role: "", counsellor: "" })
+  
+  // CRM 数据
   const [students, setStudents] = useState([])
-  const [settings, setSettings] = useState({ defaultBonus: 500, bonusOptions: [250, 500] })
-  const [counsellors] = useState(["David", "Ming", "Jett"])
-  const [role, setRole] = useState("manager")
+  const [settings] = useState({ defaultBonus: 500, bonusOptions: [250, 500] })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("students")
   const [modalOpen, setModalOpen] = useState(false)
@@ -23,37 +42,74 @@ export default function Home() {
     bonus: 500, notes: ""
   })
 
-  // 实时订阅
+  // 检查本地存储的登录状态
   useEffect(() => {
-    loadData()
-    
-    // Supabase 实时订阅
-    const subscription = supabase
-      .channel('students')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
-        loadData()
-      })
-      .subscribe()
-    
-    return () => subscription.unsubscribe()
+    const savedUser = localStorage.getItem("crm_user")
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser)
+      setUser(parsed)
+      setIsLoggedIn(true)
+    }
   }, [])
 
+  // 登录处理
+  function handleLogin(e) {
+    e.preventDefault()
+    const result = verifyLogin(loginForm.name, loginForm.password)
+    if (result) {
+      setUser(result)
+      setIsLoggedIn(true)
+      localStorage.setItem("crm_user", JSON.stringify(result))
+      setLoginError("")
+    } else {
+      setLoginError("用户名或密码错误")
+    }
+  }
+
+  // 登出
+  function handleLogout() {
+    setIsLoggedIn(false)
+    setUser({ role: "", counsellor: "" })
+    localStorage.removeItem("crm_user")
+  }
+
+  // 加载数据
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadData()
+    }
+  }, [isLoggedIn])
+
   async function loadData() {
+    setLoading(true)
     const { data, error } = await supabase
       .from('students')
       .select('*')
       .order('created_at', { ascending: false })
     
-    if (!error) setStudents(data || [])
+    if (!error) {
+      // 根据权限过滤数据
+      let filtered = data || []
+      if (user.role === "counsellor") {
+        filtered = filtered.filter(s => s.counsellor === user.counsellor)
+      }
+      setStudents(filtered)
+    }
     setLoading(false)
   }
 
   async function saveStudent(student) {
     const old = editingId ? students.find(s => s.id === editingId) : null
+    
+    // 顾问只能保存自己的学生
+    const saveCounsellor = user.role === "manager" 
+      ? student.counsellor 
+      : user.counsellor
+    
     const payload = {
       id: student.id,
       student_name: student.studentName,
-      counsellor: role === "manager" ? student.counsellor : role,
+      counsellor: saveCounsellor,
       school: student.school,
       course: student.course,
       source: student.source,
@@ -61,8 +117,8 @@ export default function Home() {
       intake_date: student.intakeDate || null,
       tuition: Number(student.tuition || 0),
       bonus: Number(student.bonus || settings.defaultBonus),
-      bonus_status: old?.bonusStatus || "Unpaid",
-      paid_at: old?.paidAt || null,
+      bonus_status: old?.bonus_status || "Unpaid",
+      paid_at: old?.paid_at || null,
       notes: student.notes
     }
     
@@ -84,6 +140,9 @@ export default function Home() {
 
   async function markReady(id) {
     const s = students.find(x => x.id === id)
+    // 顾问只能操作自己的学生
+    if (user.role === "counsellor" && s.counsellor !== user.counsellor) return
+    
     const newStatus = s.bonus_status === "Ready for Bonus" ? "Unpaid" : "Ready for Bonus"
     await supabase.from('students').update({ 
       bonus_status: newStatus, 
@@ -140,7 +199,7 @@ export default function Home() {
       setFormData({
         id: generateStudentID(),
         studentName: "",
-        counsellor: role === "manager" ? counsellors[0] : role,
+        counsellor: user.role === "manager" ? COUNSELLORS[0] : user.counsellor,
         school: "",
         course: "",
         source: "Referral",
@@ -169,8 +228,8 @@ export default function Home() {
     return new Intl.DateTimeFormat("en-AU", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(d)
   }
 
+  // 过滤数据
   const visibleStudents = students.filter(s => {
-    if (role !== "manager" && s.counsellor !== role) return false
     if (filters.search && !(
       (s.student_name || "").toLowerCase().includes(filters.search.toLowerCase()) ||
       (s.school || "").toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -189,6 +248,60 @@ export default function Home() {
   const paidBonus = enrolled.filter(s => s.bonus_status === "Paid").reduce((a, s) => a + (s.bonus || settings.defaultBonus), 0)
   const years = [...new Set(students.map(getRecordYear))].sort((a, b) => String(b).localeCompare(String(a)))
 
+  // ==================== 登录页面 ====================
+  if (!isLoggedIn) {
+    return (
+      <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '32px' }}>
+          <h1 style={{ textAlign: 'center', marginBottom: '8px' }}>留学招生 CRM</h1>
+          <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '24px' }}>请登录</p>
+          
+          <form onSubmit={handleLogin}>
+            <div className="field" style={{ marginBottom: '16px' }}>
+              <label>用户名</label>
+              <select 
+                value={loginForm.name} 
+                onChange={e => setLoginForm({...loginForm, name: e.target.value})}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                required
+              >
+                <option value="">请选择</option>
+                <option value="Manager">Manager</option>
+                {COUNSELLORS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            
+            <div className="field" style={{ marginBottom: '24px' }}>
+              <label>密码</label>
+              <input 
+                type="password" 
+                placeholder="输入密码"
+                value={loginForm.password}
+                onChange={e => setLoginForm({...loginForm, password: e.target.value})}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                required
+              />
+              <small style={{ color: '#64748b', display: 'block', marginTop: '4px' }}>
+                Manager 密码: admin123 | 顾问密码: 123456
+              </small>
+            </div>
+            
+            {loginError && (
+              <div style={{ color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
+                {loginError}
+              </div>
+            )}
+            
+            <button type="submit" className="btn" style={{ width: '100%' }}>
+              登录
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  // ==================== CRM 主页面 ====================
   if (loading) return <div className="page"><p>加载中...</p></div>
 
   return (
@@ -197,15 +310,14 @@ export default function Home() {
       <div className="header card">
         <div>
           <h1>留学招生 CRM</h1>
-          <p>Supabase 实时同步版</p>
+          <p>{user.role === "manager" ? "管理员视图 - 查看全部数据" : `顾问视图 - ${user.counsellor}`}</p>
         </div>
         <div className="header-actions">
-          <div className="field small">
-            <label>当前身份</label>
-            <select value={role} onChange={e => setRole(e.target.value)}>
-              <option value="manager">Manager</option>
-              {counsellors.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+          <div style={{ textAlign: 'right', marginRight: '16px' }}>
+            <div style={{ fontWeight: 600 }}>{user.role === "manager" ? "Manager" : user.counsellor}</div>
+            <button onClick={handleLogout} style={{ fontSize: '12px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}>
+              退出登录
+            </button>
           </div>
           <button className="btn" onClick={() => openModal()}>新增学生</button>
         </div>
@@ -216,7 +328,7 @@ export default function Home() {
         <div className="card kpi">
           <div className="kpi-title">学生总数</div>
           <div className="kpi-value">{visibleStudents.length}</div>
-          <div className="kpi-sub">{role === "manager" ? "全公司数据" : `${role} 的学生`}</div>
+          <div className="kpi-sub">{user.role === "manager" ? "全公司数据" : "我的学生"}</div>
         </div>
         <div className="card kpi">
           <div className="kpi-title">已入学</div>
@@ -238,7 +350,9 @@ export default function Home() {
       {/* Tabs */}
       <div className="tabs">
         <button className={`tab ${activeTab === "students" ? "active" : ""}`} onClick={() => setActiveTab("students")}>Students</button>
-        <button className={`tab ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</button>
+        {user.role === "manager" && (
+          <button className={`tab ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</button>
+        )}
         <button className={`tab ${activeTab === "settings" ? "active" : ""}`} onClick={() => setActiveTab("settings")}>Settings</button>
       </div>
 
@@ -271,13 +385,12 @@ export default function Home() {
                 <tr>
                   <th>ID</th>
                   <th>Student</th>
-                  <th>Counsellor</th>
+                  {user.role === "manager" && <th>Counsellor</th>}
                   <th>School / Course</th>
                   <th>Status</th>
                   <th>Intake</th>
                   <th>Bonus</th>
                   <th>Bonus Status</th>
-                  <th>Paid Time</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -289,7 +402,7 @@ export default function Home() {
                       <div><strong>{s.student_name}</strong></div>
                       <div style={{color:"#64748b",fontSize:12}}>{s.source}</div>
                     </td>
-                    <td>{s.counsellor}</td>
+                    {user.role === "manager" && <td>{s.counsellor}</td>}
                     <td>
                       <div>{s.school}</div>
                       <div style={{color:"#64748b",fontSize:12}}>{s.course}</div>
@@ -298,21 +411,22 @@ export default function Home() {
                     <td>{s.intake_date || "-"}</td>
                     <td>{currency(s.bonus)}</td>
                     <td><span className={`badge ${s.bonus_status === "Paid" ? "paid" : s.bonus_status === "Ready for Bonus" ? "ready" : ""}`}>{s.bonus_status}</span></td>
-                    <td>{fmtDateTime(s.paid_at)}</td>
                     <td>
                       <div className="action-group">
-                        {s.status === "Enrolled" && role !== "manager" && s.counsellor === role && s.bonus_status !== "Paid" && (
+                        {s.status === "Enrolled" && user.role === "counsellor" && s.bonus_status !== "Paid" && (
                           <button className="small-btn primary" onClick={() => markReady(s.id)}>
                             {s.bonus_status === "Ready for Bonus" ? "Undo Ready" : "Mark Ready"}
                           </button>
                         )}
-                        {s.status === "Enrolled" && role === "manager" && (
+                        {s.status === "Enrolled" && user.role === "manager" && (
                           <button className="small-btn primary" onClick={() => markPaid(s.id)}>
                             {s.bonus_status === "Paid" ? "Undo Paid" : "Mark Paid"}
                           </button>
                         )}
                         <button className="small-btn" onClick={() => openModal(s.id)}>Edit</button>
-                        <button className="small-btn danger" onClick={() => deleteStudent(s.id)}>Delete</button>
+                        {user.role === "manager" && (
+                          <button className="small-btn danger" onClick={() => deleteStudent(s.id)}>Delete</button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -323,14 +437,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* Dashboard Tab */}
-      {activeTab === "dashboard" && (
+      {/* Dashboard Tab (仅 Manager) */}
+      {activeTab === "dashboard" && user.role === "manager" && (
         <div className="dashboard-grid">
           <div className="card">
             <h2>Pipeline overview</h2>
             {STATUSES.map(st => {
-              const count = students.filter(s => s.status === st && (role === "manager" || s.counsellor === role)).length
-              const total = students.filter(s => role === "manager" || s.counsellor === role).length || 1
+              const count = students.filter(s => s.status === st).length
+              const total = students.length || 1
               const pct = Math.round(count / total * 100)
               return (
                 <div className="pipeline-row" key={st}>
@@ -345,7 +459,7 @@ export default function Home() {
           </div>
           <div className="card">
             <h2>顾问排行榜</h2>
-            {counsellors.map((c, i) => {
+            {COUNSELLORS.map((c, i) => {
               const mine = students.filter(s => s.counsellor === c)
               const enrolled = mine.filter(s => s.status === "Enrolled")
               const bonus = enrolled.reduce((a, s) => a + (s.bonus || settings.defaultBonus), 0)
@@ -370,14 +484,11 @@ export default function Home() {
       {activeTab === "settings" && (
         <div className="settings-grid">
           <div className="card">
-            <h2>系统信息</h2>
+            <h2>我的信息</h2>
             <div className="info-box">
-              <p><strong>数据存储：</strong>Supabase PostgreSQL</p>
-              <p><strong>实时同步：</strong>✅ 已启用</p>
-              <p><strong>当前用户：</strong>{role}</p>
+              <p><strong>角色：</strong>{user.role === "manager" ? "管理员" : "顾问"</p>
+              {user.role === "counsellor" && <p><strong>顾问名字：</strong>{user.counsellor}</p>}
               <p><strong>学生总数：</strong>{students.length}</p>
-              <p><strong>Bonus 状态流程：</strong>Unpaid → Ready for Bonus → Paid</p>
-              <p><strong>学生ID格式：</strong>STU-YYYY-XXXX</p>
             </div>
           </div>
         </div>
@@ -394,12 +505,14 @@ export default function Home() {
             <div className="form-grid">
               <div className="field"><label>Student ID</label><input value={formData.id} disabled /></div>
               <div className="field"><label>Student name</label><input value={formData.studentName} onChange={e => setFormData({...formData, studentName: e.target.value})} /></div>
-              <div className="field">
-                <label>Counsellor</label>
-                <select value={formData.counsellor} onChange={e => setFormData({...formData, counsellor: e.target.value})} disabled={role !== "manager"}>
-                  {counsellors.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
+              {user.role === "manager" && (
+                <div className="field">
+                  <label>Counsellor</label>
+                  <select value={formData.counsellor} onChange={e => setFormData({...formData, counsellor: e.target.value})}>
+                    {COUNSELLORS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="field"><label>School</label><input value={formData.school} onChange={e => setFormData({...formData, school: e.target.value})} /></div>
               <div className="field"><label>Course</label><input value={formData.course} onChange={e => setFormData({...formData, course: e.target.value})} /></div>
               <div className="field">
@@ -422,7 +535,6 @@ export default function Home() {
                   {settings.bonusOptions.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               </div>
-              <div className="field"><label>Bonus preview</label><div className="preview">{currency(formData.bonus)}</div></div>
               <div className="field full"><label>Notes</label><textarea rows={4} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} /></div>
             </div>
             <div className="modal-actions">
