@@ -281,9 +281,6 @@ export default function Home() {
                 style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
                 required
               />
-              <small style={{ color: '#64748b', display: 'block', marginTop: '4px' }}>
-                Manager 密码: admin123 | 顾问密码: 123456
-              </small>
             </div>
             
             {loginError && (
