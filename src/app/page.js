@@ -486,7 +486,7 @@ export default function Home() {
           <div className="card">
             <h2>我的信息</h2>
             <div className="info-box">
-              <p><strong>角色：</strong>{user.role === "manager" ? "管理员" : "顾问"</p>
+              <p><strong>角色：</strong>{user.role === "manager" ? "管理员" : "顾问"}</p>
               {user.role === "counsellor" && <p><strong>顾问名字：</strong>{user.counsellor}</p>}
               <p><strong>学生总数：</strong>{students.length}</p>
             </div>
