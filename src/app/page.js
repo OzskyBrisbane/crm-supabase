@@ -612,8 +612,8 @@ export default function Home() {
           </div>
           
           <div className="dashboard-grid">
-          <div className="card">
-            <h2>Pipeline overview</h2>
+            <div className="card">
+              <h2>Pipeline overview</h2>
             {STATUSES.map(st => {
               const count = students.filter(s => s.status === st).length
               const total = students.length || 1
@@ -628,9 +628,9 @@ export default function Home() {
                 </div>
               )
             })}
-          </div>
-          <div className="card">
-            <h2>顾问排行榜</h2>
+            </div>
+            <div className="card">
+              <h2>顾问排行榜</h2>
             {COUNSELLORS.map((c, i) => {
               const mine = students.filter(s => s.counsellor === c)
               const enrolled = mine.filter(s => s.status === "Enrolled")
@@ -648,9 +648,9 @@ export default function Home() {
                 </div>
               )
             })}
+            </div>
           </div>
-        </div>
-      </>
+        </>
       )}
 
       {/* Settings Tab */}
