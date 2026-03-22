@@ -138,6 +138,133 @@ export default function Home() {
     await loadData()
   }
 
+  // ==================== 報表導出功能 ====================
+  function exportToCSV(data, filename) {
+    if (data.length === 0) {
+      alert('沒有數據可導出')
+      return
+    }
+    
+    const headers = [
+      'ID', 'Student Name', 'Counsellor', 'School', 'Course', 
+      'Source', 'Status', 'Intake Date', 'Tuition (AUD)', 
+      'Bonus', 'Bonus Status', 'Paid At', 'Notes', 'Created At'
+    ]
+    
+    const rows = data.map(s => [
+      s.id,
+      s.student_name,
+      s.counsellor,
+      s.school,
+      s.course,
+      s.source,
+      s.status,
+      s.intake_date || '',
+      s.tuition || 0,
+      s.bonus || 500,
+      s.bonus_status || 'Unpaid',
+      s.paid_at ? fmtDateTime(s.paid_at) : '',
+      (s.notes || '').replace(/"/g, '""'),
+      fmtDateTime(s.created_at)
+    ])
+    
+    const csv = [headers, ...rows]
+      .map(row => row.map(cell => {
+        const str = String(cell || '')
+        if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+          return `"${str.replace(/"/g, '""')}"`
+        }
+        return str
+      }).join(','))
+      .join('\n')
+    
+    downloadFile(csv, `${filename}.csv`, 'text/csv;charset=utf-8;')
+  }
+
+  function exportToExcel(data, filename) {
+    if (data.length === 0) {
+      alert('沒有數據可導出')
+      return
+    }
+    
+    // 創建 HTML 表格用於 Excel 導出
+    const headers = [
+      'ID', 'Student Name', 'Counsellor', 'School', 'Course', 
+      'Source', 'Status', 'Intake Date', 'Tuition (AUD)', 
+      'Bonus', 'Bonus Status', 'Paid At', 'Notes', 'Created At'
+    ]
+    
+    const rows = data.map(s => `
+      <tr>
+        <td>${s.id}</td>
+        <td>${s.student_name}</td>
+        <td>${s.counsellor}</td>
+        <td>${s.school}</td>
+        <td>${s.course}</td>
+        <td>${s.source}</td>
+        <td>${s.status}</td>
+        <td>${s.intake_date || ''}</td>
+        <td>${s.tuition || 0}</td>
+        <td>${s.bonus || 500}</td>
+        <td>${s.bonus_status || 'Unpaid'}</td>
+        <td>${s.paid_at ? fmtDateTime(s.paid_at) : ''}</td>
+        <td>${(s.notes || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>
+        <td>${fmtDateTime(s.created_at)}</td>
+      </tr>
+    `).join('')
+    
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          table { border-collapse: collapse; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background-color: #2563eb; color: white; font-weight: bold; }
+          tr:nth-child(even) { background-color: #f8fafc; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <thead>
+            <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `
+    
+    downloadFile(html, `${filename}.xls`, 'application/vnd.ms-excel;charset=utf-8;')
+  }
+
+  function downloadFile(content, filename, mimeType) {
+    const blob = new Blob(['\ufeff' + content], { type: mimeType })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(link.href)
+  }
+
+  function getExportData() {
+    // 根據當前篩選條件導出數據
+    return visibleStudents
+  }
+
+  function getExportFilename() {
+    const date = new Date().toISOString().split('T')[0]
+    const activeFilters = []
+    if (filters.status !== 'All') activeFilters.push(filters.status)
+    if (filters.year !== 'All') activeFilters.push(filters.year)
+    const filterStr = activeFilters.length > 0 ? `-${activeFilters.join('-')}` : ''
+    return `CRM-Report${filterStr}-${date}`
+  }
+
   async function markReady(id) {
     const s = students.find(x => x.id === id)
     // 顾问只能操作自己的学生
@@ -376,6 +503,31 @@ export default function Home() {
               </select>
             </div>
           </div>
+          
+          {/* Manager 導出按鈕 */}
+          {user.role === "manager" && (
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', padding: '12px', background: '#f8fafc', borderRadius: '12px', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, color: '#475569' }}>📊 報表導出:</span>
+              <button 
+                className="btn secondary" 
+                onClick={() => exportToCSV(getExportData(), getExportFilename())}
+                style={{ padding: '8px 14px', fontSize: '14px' }}
+              >
+                📄 導出 CSV
+              </button>
+              <button 
+                className="btn secondary" 
+                onClick={() => exportToExcel(getExportData(), getExportFilename())}
+                style={{ padding: '8px 14px', fontSize: '14px' }}
+              >
+                📑 導出 Excel
+              </button>
+              <span style={{ color: '#64748b', fontSize: '13px', marginLeft: 'auto' }}>
+                共 {visibleStudents.length} 條記錄
+              </span>
+            </div>
+          )}
+          
           <div className="table-wrap">
             <table>
               <thead>
@@ -436,7 +588,30 @@ export default function Home() {
 
       {/* Dashboard Tab (仅 Manager) */}
       {activeTab === "dashboard" && user.role === "manager" && (
-        <div className="dashboard-grid">
+        <>
+          {/* 導出按鈕區域 */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', padding: '12px', background: '#f8fafc', borderRadius: '12px', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600, color: '#475569' }}>📊 全部數據導出:</span>
+            <button 
+              className="btn secondary" 
+              onClick={() => exportToCSV(students, `CRM-All-Data-${new Date().toISOString().split('T')[0]}`)}
+              style={{ padding: '8px 14px', fontSize: '14px' }}
+            >
+              📄 導出全部 CSV
+            </button>
+            <button 
+              className="btn secondary" 
+              onClick={() => exportToExcel(students, `CRM-All-Data-${new Date().toISOString().split('T')[0]}`)}
+              style={{ padding: '8px 14px', fontSize: '14px' }}
+            >
+              📑 導出全部 Excel
+            </button>
+            <span style={{ color: '#64748b', fontSize: '13px', marginLeft: 'auto' }}>
+              全部 {students.length} 條記錄
+            </span>
+          </div>
+          
+          <div className="dashboard-grid">
           <div className="card">
             <h2>Pipeline overview</h2>
             {STATUSES.map(st => {
@@ -475,6 +650,7 @@ export default function Home() {
             })}
           </div>
         </div>
+      </>
       )}
 
       {/* Settings Tab */}
