@@ -1,4 +1,3 @@
-
 :root{--bg:#f8fafc;--card:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--primary:#2563eb}
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
@@ -52,9 +51,9 @@ th{color:var(--muted);font-weight:600;background:#fcfcfd;position:sticky;top:0}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .field.full{grid-column:1 / -1}
 .preview{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
-.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:24px;z-index:1000}
 .modal.hidden{display:none}
-.modal-card{width:min(980px,100%);background:#fff;border-radius:24px;padding:20px;border:1px solid var(--line)}
+.modal-card{width:min(980px,100%);background:#fff;border-radius:24px;padding:20px;border:1px solid var(--line);max-height:90vh;overflow-y:auto}
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .modal-head h3{margin:0}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
@@ -109,12 +108,281 @@ th{color:var(--muted);font-weight:600;background:#fcfcfd;position:sticky;top:0}
   border: 1px solid #e2e8f0;
 }
 
-@media (max-width:1100px){
-  .kpis,.dashboard-grid,.settings-grid{grid-template-columns:1fr}
-  .header,.section-head{flex-direction:column;align-items:stretch}
-  .filters,.filters-4{grid-template-columns:1fr;min-width:0}
-  .form-grid{grid-template-columns:1fr}
-  .add-counsellor-row,.counsellor-row{flex-direction:column;align-items:stretch}
-  .export-bar { flex-wrap: wrap; }
-  .export-bar .record-count { margin-left: 0; width: 100%; text-align: center; margin-top: 8px; }
+/* ==================== 手機響應式優化 ==================== */
+
+/* 平板和手機 (小於 1024px) */
+@media (max-width: 1024px) {
+  .page {
+    padding: 12px;
+    max-width: 100%;
+  }
+  
+  .card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .header h1 {
+    font-size: 24px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  
+  .header-actions .btn {
+    width: 100%;
+    padding: 12px;
+  }
+  
+  /* KPI 改為 2x2 網格 */
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 12px 0;
+  }
+  
+  .kpi-value {
+    font-size: 24px;
+  }
+  
+  /* Tabs 改為滾動 */
+  .tabs {
+    grid-template-columns: repeat(3, minmax(100px, 1fr));
+    overflow-x: auto;
+    gap: 4px;
+    padding: 4px;
+  }
+  
+  .tab {
+    padding: 10px 8px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  
+  /* 篩選改為垂直布局 */
+  .section-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .filters,
+  .filters-4,
+  .filters-5 {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    gap: 8px;
+  }
+  
+  .filters input,
+  .filters select {
+    padding: 12px;
+    font-size: 16px; /* 防止 iOS 縮放 */
+  }
+  
+  /* 表格橫向滾動 */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+  
+  table {
+    font-size: 13px;
+    min-width: 800px;
+  }
+  
+  th, td {
+    padding: 10px 8px;
+  }
+  
+  /* Dashboard 改為單列 */
+  .dashboard-grid,
+  .settings-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* Modal 全屏 */
+  .modal {
+    padding: 0;
+    align-items: flex-end;
+  }
+  
+  .modal-card {
+    border-radius: 20px 20px 0 0;
+    max-height: 85vh;
+    padding: 16px;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .modal-actions .btn {
+    width: 100%;
+    padding: 12px;
+  }
+  
+  /* 導出按鈕 */
+  .export-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .export-bar .btn.secondary {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .export-bar .record-count {
+    margin-left: 0;
+    text-align: center;
+  }
+}
+
+/* 小屏幕手機 (小於 640px) */
+@media (max-width: 640px) {
+  .page {
+    padding: 8px;
+  }
+  
+  .card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  
+  .header h1 {
+    font-size: 20px;
+  }
+  
+  /* KPI 改為單列 */
+  .kpis {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .kpi {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+  }
+  
+  .kpi-title {
+    font-size: 13px;
+  }
+  
+  .kpi-value {
+    font-size: 20px;
+    margin: 0;
+  }
+  
+  .kpi-sub {
+    display: none;
+  }
+  
+  /* Tabs */
+  .tabs {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .tab {
+    padding: 8px 4px;
+    font-size: 13px;
+  }
+  
+  /* 表格更小 */
+  table {
+    font-size: 12px;
+    min-width: 700px;
+  }
+  
+  th, td {
+    padding: 8px 6px;
+  }
+  
+  /* 操作按鈕 */
+  .action-group {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .small-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  
+  /* 排行榜卡片 */
+  .rank-card {
+    padding: 12px;
+  }
+  
+  /* Pipeline 進度條 */
+  .pipeline-row {
+    gap: 4px;
+  }
+  
+  .progress {
+    height: 8px;
+  }
+}
+
+/* 超小屏幕 (小於 380px) */
+@media (max-width: 380px) {
+  .header h1 {
+    font-size: 18px;
+  }
+  
+  .tabs {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .tab {
+    font-size: 12px;
+    padding: 6px 2px;
+  }
+  
+  table {
+    min-width: 650px;
+  }
+}
+
+/* 觸摸設備優化 */
+@media (hover: none) {
+  .btn:active,
+  .small-btn:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  
+  .tab:active {
+    background: #eff6ff;
+  }
+}
+
+/* 安全區域 (iPhone X+) */
+@supports (padding: max(0px)) {
+  .page {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
 }
