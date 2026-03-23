@@ -500,13 +500,13 @@ export default function Home() {
                 <option value="All">All Sources</option>
                 {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
+              <select value={filters.bonusStatus} onChange={e => setFilters({...filters, bonusStatus: e.target.value})}>
+                <option value="All">Bonus Status</option>
+                {BONUS_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
               <select value={filters.year} onChange={e => setFilters({...filters, year: e.target.value})}>
                 <option value="All">All Years</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              <select value={filters.bonusStatus} onChange={e => setFilters({...filters, bonusStatus: e.target.value})}>
-                <option value="All">All Bonus Status</option>
-                {BONUS_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
