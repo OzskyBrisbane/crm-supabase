@@ -113,6 +113,10 @@ export default function Home() {
       ? student.counsellor
       : user.counsellor
 
+    // 如果狀態為 Enrolled 或 Lost，自動取消緊急標記
+    const shouldCancelUrgent = student.status === "Enrolled" || student.status === "Lost"
+    const finalIsUrgent = shouldCancelUrgent ? false : (student.isUrgent || false)
+
     const payload = {
       id: student.id,
       student_name: student.studentName,
@@ -128,7 +132,7 @@ export default function Home() {
       bonus_status: old?.bonus_status || "Unpaid",
       paid_at: old?.paid_at || null,
       notes: student.notes,
-      is_urgent: student.isUrgent || false
+      is_urgent: finalIsUrgent
     }
 
     const { error } = await supabase
