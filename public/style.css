@@ -21,6 +21,7 @@ body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:
 .section-head h2,.card h2{margin:0 0 14px}
 .filters{display:grid;gap:10px;min-width:650px}
 .filters-4{grid-template-columns:2fr 1fr 1fr 1fr}
+.filters-5{grid-template-columns:2fr 1fr 1fr 1fr 1fr}
 input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
 input[disabled]{background:#f8fafc;color:#475569}
 button{font:inherit}

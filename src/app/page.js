@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 const STATUSES = ["Lead", "Consultation", "Applied", "Offer", "Deposit Paid", "Enrolled", "Lost"]
 const SOURCES = ["Referral", "Xiaohongshu", "Wechat", "Walk-in", "Website", "Friend", "Other"]
 const COUNSELLORS = ["David", "Ming", "Jett"]
+const BONUS_STATUSES = ["Unpaid", "Ready for Bonus", "Paid"]
 
 // 简单的密码验证
 function verifyLogin(name, password) {
@@ -34,7 +35,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("students")
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [filters, setFilters] = useState({ search: "", status: "All", source: "All", year: "All" })
+  const [filters, setFilters] = useState({ search: "", status: "All", source: "All", year: "All", bonusStatus: "All" })
   
   const [formData, setFormData] = useState({
     id: "", studentName: "", counsellor: "", school: "", course: "",
@@ -261,6 +262,7 @@ export default function Home() {
     const activeFilters = []
     if (filters.status !== 'All') activeFilters.push(filters.status)
     if (filters.year !== 'All') activeFilters.push(filters.year)
+    if (filters.bonusStatus !== 'All') activeFilters.push(filters.bonusStatus)
     const filterStr = activeFilters.length > 0 ? `-${activeFilters.join('-')}` : ''
     return `CRM-Report${filterStr}-${date}`
   }
@@ -366,6 +368,7 @@ export default function Home() {
     if (filters.status !== "All" && s.status !== filters.status) return false
     if (filters.source !== "All" && s.source !== filters.source) return false
     if (filters.year !== "All" && getRecordYear(s) !== filters.year) return false
+    if (filters.bonusStatus !== "All" && s.bonus_status !== filters.bonusStatus) return false
     return true
   })
 
@@ -485,7 +488,7 @@ export default function Home() {
         <div className="card">
           <div className="section-head">
             <h2>学生管理</h2>
-            <div className="filters filters-4">
+            <div className="filters filters-5">
               <input placeholder="搜索学生 / 学校 / 课程 / ID" 
                 value={filters.search} 
                 onChange={e => setFilters({...filters, search: e.target.value})} />
@@ -500,6 +503,10 @@ export default function Home() {
               <select value={filters.year} onChange={e => setFilters({...filters, year: e.target.value})}>
                 <option value="All">All Years</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <select value={filters.bonusStatus} onChange={e => setFilters({...filters, bonusStatus: e.target.value})}>
+                <option value="All">All Bonus Status</option>
+                {BONUS_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
