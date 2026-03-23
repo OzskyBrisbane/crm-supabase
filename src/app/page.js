@@ -311,9 +311,19 @@ export default function Home() {
     }
 
     const newUrgentStatus = !s.is_urgent
-    await supabase.from('students').update({
+    console.log('切換緊急狀態:', id, '新狀態:', newUrgentStatus)
+    
+    const { error } = await supabase.from('students').update({
       is_urgent: newUrgentStatus
     }).eq('id', id)
+    
+    if (error) {
+      console.error('更新緊急狀態失敗:', error)
+      alert('更新失敗: ' + error.message)
+      return
+    }
+    
+    console.log('更新成功')
     await loadData()
   }
 
@@ -589,15 +599,15 @@ export default function Home() {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{
-                          color: s.is_urgent ? '#dc2626' : 'inherit',
-                          fontWeight: s.is_urgent ? '700' : '500',
-                          background: s.is_urgent ? '#fef2f2' : 'transparent',
-                          padding: s.is_urgent ? '2px 6px' : '0',
-                          borderRadius: s.is_urgent ? '4px' : '0',
-                          border: s.is_urgent ? '1px solid #fecaca' : 'none'
+                          color: !!s.is_urgent ? '#dc2626' : 'inherit',
+                          fontWeight: !!s.is_urgent ? '700' : '500',
+                          background: !!s.is_urgent ? '#fef2f2' : 'transparent',
+                          padding: !!s.is_urgent ? '2px 6px' : '0',
+                          borderRadius: !!s.is_urgent ? '4px' : '0',
+                          border: !!s.is_urgent ? '1px solid #fecaca' : 'none'
                         }}>
                           {s.id}
-                          {s.is_urgent && ' 🔥'}
+                          {!!s.is_urgent && ' 🔥'}
                         </span>
                       </div>
                     </td>
@@ -653,13 +663,13 @@ export default function Home() {
                           className="small-btn"
                           onClick={() => toggleUrgent(s.id)}
                           style={{
-                            background: s.is_urgent ? '#fef2f2' : '#fff',
-                            borderColor: s.is_urgent ? '#ef4444' : '#e2e8f0',
-                            color: s.is_urgent ? '#dc2626' : '#64748b'
+                            background: !!s.is_urgent ? '#fef2f2' : '#fff',
+                            borderColor: !!s.is_urgent ? '#ef4444' : '#e2e8f0',
+                            color: !!s.is_urgent ? '#dc2626' : '#64748b'
                           }}
-                          title={s.is_urgent ? "取消緊急標記" : "標記為緊急"}
+                          title={!!s.is_urgent ? "取消緊急標記" : "標記為緊急"}
                         >
-                          {s.is_urgent ? '🔥 取消緊急' : '標記緊急'}
+                          {!!s.is_urgent ? '🔥 取消緊急' : '標記緊急'}
                         </button>
                         {user.role === "manager" && (
                           <button className="small-btn danger" onClick={() => deleteStudent(s.id)}>Delete</button>
