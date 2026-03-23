@@ -547,6 +547,7 @@ export default function Home() {
                   <th>Intake</th>
                   <th>Bonus</th>
                   <th>Bonus Status</th>
+                  <th>Notes</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -567,6 +568,15 @@ export default function Home() {
                     <td>{s.intake_date || "-"}</td>
                     <td>{currency(s.bonus)}</td>
                     <td><span className={`badge ${s.bonus_status === "Paid" ? "paid" : s.bonus_status === "Ready for Bonus" ? "ready" : ""}`}>{s.bonus_status}</span></td>
+                    <td>
+                      <div style={{maxWidth: '200px', fontSize: '13px', color: '#475569', lineHeight: '1.4'}}>
+                        {s.notes ? (
+                          s.notes.length > 50 ? s.notes.substring(0, 50) + '...' : s.notes
+                        ) : (
+                          <span style={{color: '#94a3b8'}}>-</span>
+                        )}
+                      </div>
+                    </td>
                     <td>
                       <div className="action-group">
                         {s.status === "Enrolled" && user.role === "counsellor" && s.bonus_status !== "Paid" && (
