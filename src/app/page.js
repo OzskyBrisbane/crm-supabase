@@ -580,15 +580,15 @@ export default function Home() {
             <table>
               <thead>
                 <tr>
-                  <th style={{minWidth: '130px'}}>ID</th>
-                  <th style={{minWidth: '140px'}}>Student</th>
-                  {user.role === "manager" && <th style={{minWidth: '80px'}}>顾问</th>}
-                  <th style={{minWidth: '180px'}}>School / Course</th>
-                  <th style={{minWidth: '100px'}}>Status</th>
-                  <th style={{minWidth: '100px'}}>Dates</th>
-                  <th style={{minWidth: '120px'}}>Bonus</th>
-                  <th style={{minWidth: '150px'}}>Notes</th>
-                  <th style={{minWidth: '180px'}}>Actions</th>
+                  <th style={{width: '110px'}}>ID</th>
+                  <th style={{width: '120px'}}>Student</th>
+                  {user.role === "manager" && <th style={{width: '60px'}}>顾问</th>}
+                  <th style={{width: '140px'}}>School/Course</th>
+                  <th style={{width: '80px'}}>Status</th>
+                  <th style={{width: '90px'}}>Dates</th>
+                  <th style={{width: '90px'}}>Bonus</th>
+                  <th style={{width: '120px'}}>Notes</th>
+                  <th style={{width: '140px'}}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -610,82 +610,74 @@ export default function Home() {
                       </div>
                     </td>
                     <td>
-                      <div><strong>{s.student_name}</strong></div>
-                      <div style={{color:"#64748b",fontSize:12}}>{s.source}</div>
+                      <div style={{fontSize: '12px'}}>
+                        <div style={{fontWeight: 600}}>{s.student_name}</div>
+                        <div style={{color:"#64748b",fontSize:11}}>{s.source}</div>
+                      </div>
                     </td>
-                    {user.role === "manager" && <td>{s.counsellor}</td>}
+                    {user.role === "manager" && <td style={{fontSize: '12px'}}>{s.counsellor}</td>}
                     <td>
-                      <div>{s.school}</div>
-                      <div style={{color:"#64748b",fontSize:12}}>{s.course}</div>
+                      <div style={{fontSize: '12px'}}>
+                        <div style={{fontWeight: 500}}>{s.school}</div>
+                        <div style={{color:"#64748b",fontSize:11}}>{s.course}</div>
+                      </div>
                     </td>
                     <td><span className={`badge ${s.status === "Enrolled" ? "ready" : ""}`}>{s.status}</span></td>
                     <td>
-                      <div style={{fontSize: '12px', lineHeight: '1.5'}}>
+                      <div style={{fontSize: '11px', lineHeight: '1.4'}}>
+                        <div>{s.intake_date?.slice(5) || "-"}</div>
                         <div>
-                          <span style={{color: '#64748b'}}>入學:</span> {s.intake_date || "-"}
-                        </div>
-                        <div>
-                          <span style={{color: '#64748b'}}>簽證:</span>{' '}
                           {s.visa_expiry_date ? (
                             <span style={{
-                              color: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '#dc2626' : 'inherit',
-                              fontWeight: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '600' : '400'
+                              color: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '#dc2626' : '#64748b',
+                              fontSize: '10px'
                             }}>
-                              {s.visa_expiry_date}
-                              {new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) && '⚠️'}
+                              V:{s.visa_expiry_date?.slice(5)}{new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) && '⚠️'}
                             </span>
                           ) : (
-                            "-"
+                            <span style={{color: '#94a3b8', fontSize: '10px'}}>V:-</span>
                           )}
                         </div>
                       </div>
                     </td>
                     <td>
-                      <div style={{fontSize: '13px'}}>
-                        <div>{currency(s.bonus)}</div>
-                        <div style={{marginTop: '4px'}}>
-                          <span className={`badge ${s.bonus_status === "Paid" ? "paid" : s.bonus_status === "Ready for Bonus" ? "ready" : ""}`}>
-                            {s.bonus_status}
+                      <div style={{fontSize: '12px'}}>
+                        <div>${s.bonus}</div>
+                        <div style={{marginTop: '2px'}}>
+                          <span className={`badge ${s.bonus_status === "Paid" ? "paid" : s.bonus_status === "Ready for Bonus" ? "ready" : ""}`} style={{fontSize: '10px', padding: '2px 6px'}}>
+                            {s.bonus_status === "Ready for Bonus" ? "Ready" : s.bonus_status}
                           </span>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <div style={{maxWidth: '200px', fontSize: '13px', color: '#475569', lineHeight: '1.4', whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
+                      <div style={{maxWidth: '120px', fontSize: '11px', color: '#475569', lineHeight: '1.3', whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
                         {s.notes ? (
-                          s.notes.length > 100 ? s.notes.substring(0, 100) + '...' : s.notes
+                          s.notes.length > 60 ? s.notes.substring(0, 60) + '...' : s.notes
                         ) : (
                           <span style={{color: '#94a3b8'}}>-</span>
                         )}
                       </div>
                     </td>
                     <td>
-                      <div className="action-group">
-                        {s.status === "Enrolled" && user.role === "counsellor" && s.bonus_status !== "Paid" && (
-                          <button className="small-btn primary" onClick={() => markReady(s.id)}>
-                            {s.bonus_status === "Ready for Bonus" ? "Undo Ready" : "Mark Ready"}
-                          </button>
-                        )}
-                        {s.status === "Enrolled" && user.role === "manager" && (
-                          <button className="small-btn primary" onClick={() => markPaid(s.id)}>
-                            {s.bonus_status === "Paid" ? "Undo Paid" : "Mark Paid"}
-                          </button>
-                        )}
-                        <button className="small-btn" onClick={() => openModal(s.id)}>Edit</button>
+                      <div className="action-group" style={{gap: '4px'}}>
+                        <button className="small-btn" style={{fontSize: '11px', padding: '4px 8px'}} onClick={() => openModal(s.id)}>Edit</button>
                         <button
                           className="small-btn"
                           onClick={() => toggleUrgent(s.id)}
                           style={{
+                            fontSize: '11px',
+                            padding: '4px 8px',
                             background: !!s.is_urgent ? '#fef2f2' : '#fff',
                             borderColor: !!s.is_urgent ? '#ef4444' : '#e2e8f0',
                             color: !!s.is_urgent ? '#dc2626' : '#64748b'
                           }}
-                          title={!!s.is_urgent ? "取消緊急標記" : "標記為緊急"}
+                          title={!!s.is_urgent ? "取消緊急" : "標記緊急"}
                         >
-                          {!!s.is_urgent ? '🔥 取消緊急' : '標記緊急'}
+                          {!!s.is_urgent ? '🔥' : '⚡'}
                         </button>
                         {user.role === "manager" && (
-                          <button className="small-btn danger" onClick={() => deleteStudent(s.id)}>Delete</button>
+                          <button className="small-btn danger" style={{fontSize: '11px', padding: '4px 8px'}} onClick={() => deleteStudent(s.id)}>Del</button>
                         )}
                       </div>
                     </td>

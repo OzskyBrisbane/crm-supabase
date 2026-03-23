@@ -388,12 +388,20 @@ th{color:var(--muted);font-weight:600;background:#fcfcfd;position:sticky;top:0}
 }
 
 /* 表格欄位寬度優化 */
-th:nth-child(1), td:nth-child(1) { min-width: 120px; } /* ID */
-th:nth-child(2), td:nth-child(2) { min-width: 130px; } /* Student */
-th:nth-child(3), td:nth-child(3) { min-width: 70px; }  /* Counsellor */
-th:nth-child(4), td:nth-child(4) { min-width: 160px; } /* School/Course */
-th:nth-child(5), td:nth-child(5) { min-width: 90px; }  /* Status */
-th:nth-child(6), td:nth-child(6) { min-width: 90px; }  /* Dates */
-th:nth-child(7), td:nth-child(7) { min-width: 100px; } /* Bonus */
-th:nth-child(8), td:nth-child(8) { min-width: 130px; } /* Notes */
-th:nth-child(9), td:nth-child(9) { min-width: 160px; } /* Actions */
+th, td { padding: 8px 6px; font-size: 12px; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+/* 表格欄位寬度 */
+th:nth-child(1), td:nth-child(1) { width: 110px; } /* ID */
+th:nth-child(2), td:nth-child(2) { width: 120px; } /* Student */
+th:nth-child(3), td:nth-child(3) { width: 60px; }  /* Counsellor */
+th:nth-child(4), td:nth-child(4) { width: 140px; } /* School/Course */
+th:nth-child(5), td:nth-child(5) { width: 80px; }  /* Status */
+th:nth-child(6), td:nth-child(6) { width: 90px; }  /* Dates */
+th:nth-child(7), td:nth-child(7) { width: 90px; }  /* Bonus */
+th:nth-child(8), td:nth-child(8) { width: 120px; } /* Notes */
+th:nth-child(9), td:nth-child(9) { width: 140px; } /* Actions */
+
+/* 動作按鈕 */
+.action-group { gap: 4px; }
+.small-btn { padding: 4px 8px; font-size: 11px; white-space: nowrap; }
