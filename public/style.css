@@ -386,3 +386,14 @@ th{color:var(--muted);font-weight:600;background:#fcfcfd;position:sticky;top:0}
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
+
+/* 表格欄位寬度優化 */
+th:nth-child(1), td:nth-child(1) { min-width: 120px; } /* ID */
+th:nth-child(2), td:nth-child(2) { min-width: 130px; } /* Student */
+th:nth-child(3), td:nth-child(3) { min-width: 70px; }  /* Counsellor */
+th:nth-child(4), td:nth-child(4) { min-width: 160px; } /* School/Course */
+th:nth-child(5), td:nth-child(5) { min-width: 90px; }  /* Status */
+th:nth-child(6), td:nth-child(6) { min-width: 90px; }  /* Dates */
+th:nth-child(7), td:nth-child(7) { min-width: 100px; } /* Bonus */
+th:nth-child(8), td:nth-child(8) { min-width: 130px; } /* Notes */
+th:nth-child(9), td:nth-child(9) { min-width: 160px; } /* Actions */
