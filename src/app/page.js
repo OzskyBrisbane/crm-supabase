@@ -594,9 +594,9 @@ export default function Home() {
                     <td>{currency(s.bonus)}</td>
                     <td><span className={`badge ${s.bonus_status === "Paid" ? "paid" : s.bonus_status === "Ready for Bonus" ? "ready" : ""}`}>{s.bonus_status}</span></td>
                     <td>
-                      <div style={{maxWidth: '200px', fontSize: '13px', color: '#475569', lineHeight: '1.4'}}>
+                      <div style={{maxWidth: '200px', fontSize: '13px', color: '#475569', lineHeight: '1.4', whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
                         {s.notes ? (
-                          s.notes.length > 50 ? s.notes.substring(0, 50) + '...' : s.notes
+                          s.notes.length > 100 ? s.notes.substring(0, 100) + '...' : s.notes
                         ) : (
                           <span style={{color: '#94a3b8'}}>-</span>
                         )}
