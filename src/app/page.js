@@ -39,7 +39,7 @@ export default function Home() {
   
   const [formData, setFormData] = useState({
     id: "", studentName: "", counsellor: "", school: "", course: "",
-    source: "Referral", status: "Lead", intakeDate: "", tuition: "",
+    source: "Referral", status: "Lead", intakeDate: "", visaExpiryDate: "", tuition: "",
     bonus: 500, notes: ""
   })
 
@@ -116,6 +116,7 @@ export default function Home() {
       source: student.source,
       status: student.status,
       intake_date: student.intakeDate || null,
+      visa_expiry_date: student.visaExpiryDate || null,
       tuition: Number(student.tuition || 0),
       bonus: Number(student.bonus || settings.defaultBonus),
       bonus_status: old?.bonus_status || "Unpaid",
@@ -148,7 +149,7 @@ export default function Home() {
     
     const headers = [
       'ID', 'Student Name', 'Counsellor', 'School', 'Course', 
-      'Source', 'Status', 'Intake Date', 'Tuition (AUD)', 
+      'Source', 'Status', 'Intake Date', 'Visa Expiry Date', 'Tuition (AUD)', 
       'Bonus', 'Bonus Status', 'Paid At', 'Notes', 'Created At'
     ]
     
@@ -161,6 +162,7 @@ export default function Home() {
       s.source,
       s.status,
       s.intake_date || '',
+      s.visa_expiry_date || '',
       s.tuition || 0,
       s.bonus || 500,
       s.bonus_status || 'Unpaid',
@@ -191,7 +193,7 @@ export default function Home() {
     // 創建 HTML 表格用於 Excel 導出
     const headers = [
       'ID', 'Student Name', 'Counsellor', 'School', 'Course', 
-      'Source', 'Status', 'Intake Date', 'Tuition (AUD)', 
+      'Source', 'Status', 'Intake Date', 'Visa Expiry Date', 'Tuition (AUD)', 
       'Bonus', 'Bonus Status', 'Paid At', 'Notes', 'Created At'
     ]
     
@@ -205,6 +207,7 @@ export default function Home() {
         <td>${s.source}</td>
         <td>${s.status}</td>
         <td>${s.intake_date || ''}</td>
+        <td>${s.visa_expiry_date || ''}</td>
         <td>${s.tuition || 0}</td>
         <td>${s.bonus || 500}</td>
         <td>${s.bonus_status || 'Unpaid'}</td>
@@ -320,6 +323,7 @@ export default function Home() {
         source: s.source,
         status: s.status,
         intakeDate: s.intake_date || "",
+        visaExpiryDate: s.visa_expiry_date || "",
         tuition: s.tuition,
         bonus: s.bonus,
         notes: s.notes || ""
@@ -334,6 +338,7 @@ export default function Home() {
         source: "Referral",
         status: "Lead",
         intakeDate: "",
+        visaExpiryDate: "",
         tuition: "",
         bonus: settings.defaultBonus,
         notes: ""
@@ -545,6 +550,7 @@ export default function Home() {
                   <th>School / Course</th>
                   <th>Status</th>
                   <th>Intake</th>
+                  <th>Visa Expiry</th>
                   <th>Bonus</th>
                   <th>Bonus Status</th>
                   <th>Notes</th>
@@ -566,6 +572,19 @@ export default function Home() {
                     </td>
                     <td><span className={`badge ${s.status === "Enrolled" ? "ready" : ""}`}>{s.status}</span></td>
                     <td>{s.intake_date || "-"}</td>
+                    <td>
+                      {s.visa_expiry_date ? (
+                        <span style={{ 
+                          color: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '#dc2626' : '#475569',
+                          fontWeight: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '600' : '400'
+                        }}>
+                          {s.visa_expiry_date}
+                          {new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) && ' ⚠️'}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                     <td>{currency(s.bonus)}</td>
                     <td><span className={`badge ${s.bonus_status === "Paid" ? "paid" : s.bonus_status === "Ready for Bonus" ? "ready" : ""}`}>{s.bonus_status}</span></td>
                     <td>
@@ -718,6 +737,7 @@ export default function Home() {
                 </select>
               </div>
               <div className="field"><label>Intake date</label><input type="date" value={formData.intakeDate} onChange={e => setFormData({...formData, intakeDate: e.target.value})} /></div>
+              <div className="field"><label>Visa expiry date</label><input type="date" value={formData.visaExpiryDate} onChange={e => setFormData({...formData, visaExpiryDate: e.target.value})} /></div>
               <div className="field"><label>Tuition (AUD)</label><input type="number" value={formData.tuition} onChange={e => setFormData({...formData, tuition: e.target.value})} /></div>
               <div className="field">
                 <label>Bonus</label>
