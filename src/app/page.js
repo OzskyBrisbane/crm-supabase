@@ -30,10 +30,10 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loginForm, setLoginForm] = useState({ name: "", password: "" })
   const [loginError, setLoginError] = useState("")
-  
+
   // 用户信息
   const [user, setUser] = useState({ role: "", counsellor: "" })
-  
+
   // CRM 数据
   const [students, setStudents] = useState([])
   const [settings] = useState({ defaultBonus: 500, bonusOptions: [250, 500] })
@@ -42,11 +42,11 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [filters, setFilters] = useState({ search: "", status: "All", source: "All", year: "All", bonusStatus: "All" })
-  
+
   const [formData, setFormData] = useState({
     id: "", studentName: "", counsellor: "", school: "", course: "",
     source: "Referral", status: "Lead", intakeDate: "", visaExpiryDate: "", tuition: "",
-    bonus: 500, notes: ""
+    bonus: 500, notes: "", isUrgent: false
   })
 
   // 检查本地存储的登录状态
@@ -93,7 +93,7 @@ export default function Home() {
       .from('students')
       .select('*')
       .order('created_at', { ascending: false })
-    
+
     if (!error) {
       // 根据权限过滤数据
       let filtered = data || []
@@ -107,12 +107,12 @@ export default function Home() {
 
   async function saveStudent(student) {
     const old = editingId ? students.find(s => s.id === editingId) : null
-    
+
     // 顾问只能保存自己的学生
-    const saveCounsellor = user.role === "manager" 
-      ? student.counsellor 
+    const saveCounsellor = user.role === "manager"
+      ? student.counsellor
       : user.counsellor
-    
+
     const payload = {
       id: student.id,
       student_name: student.studentName,
@@ -127,13 +127,14 @@ export default function Home() {
       bonus: Number(student.bonus || settings.defaultBonus),
       bonus_status: old?.bonus_status || "Unpaid",
       paid_at: old?.paid_at || null,
-      notes: student.notes
+      notes: student.notes,
+      is_urgent: student.isUrgent || false
     }
-    
+
     const { error } = await supabase
       .from('students')
       .upsert(payload, { onConflict: 'id' })
-    
+
     if (!error) {
       await loadData()
       setModalOpen(false)
@@ -152,13 +153,13 @@ export default function Home() {
       alert('沒有數據可導出')
       return
     }
-    
+
     const headers = [
-      'ID', 'Student Name', 'Counsellor', 'School', 'Course', 
-      'Source', 'Status', 'Intake Date', 'Visa Expiry Date', 'Tuition (AUD)', 
-      'Bonus', 'Bonus Status', 'Paid At', 'Notes', 'Created At'
+      'ID', 'Student Name', 'Counsellor', 'School', 'Course',
+      'Source', 'Status', 'Intake Date', 'Visa Expiry Date', 'Tuition (AUD)',
+      'Bonus', 'Bonus Status', 'Paid At', 'Notes', 'Is Urgent', 'Created At'
     ]
-    
+
     const rows = data.map(s => [
       s.id,
       s.student_name,
@@ -174,9 +175,10 @@ export default function Home() {
       s.bonus_status || 'Unpaid',
       s.paid_at ? fmtDateTime(s.paid_at) : '',
       (s.notes || '').replace(/"/g, '""'),
+      s.is_urgent ? 'Yes' : 'No',
       fmtDateTime(s.created_at)
     ])
-    
+
     const csv = [headers, ...rows]
       .map(row => row.map(cell => {
         const str = String(cell || '')
@@ -186,7 +188,7 @@ export default function Home() {
         return str
       }).join(','))
       .join('\n')
-    
+
     downloadFile(csv, `${filename}.csv`, 'text/csv;charset=utf-8;')
   }
 
@@ -195,14 +197,14 @@ export default function Home() {
       alert('沒有數據可導出')
       return
     }
-    
+
     // 創建 HTML 表格用於 Excel 導出
     const headers = [
-      'ID', 'Student Name', 'Counsellor', 'School', 'Course', 
-      'Source', 'Status', 'Intake Date', 'Visa Expiry Date', 'Tuition (AUD)', 
+      'ID', 'Student Name', 'Counsellor', 'School', 'Course',
+      'Source', 'Status', 'Intake Date', 'Visa Expiry Date', 'Tuition (AUD)',
       'Bonus', 'Bonus Status', 'Paid At', 'Notes', 'Created At'
     ]
-    
+
     const rows = data.map(s => `
       <tr>
         <td>${s.id}</td>
@@ -222,7 +224,7 @@ export default function Home() {
         <td>${fmtDateTime(s.created_at)}</td>
       </tr>
     `).join('')
-    
+
     const html = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
       <head>
@@ -246,7 +248,7 @@ export default function Home() {
       </body>
       </html>
     `
-    
+
     downloadFile(html, `${filename}.xls`, 'application/vnd.ms-excel;charset=utf-8;')
   }
 
@@ -280,11 +282,11 @@ export default function Home() {
     const s = students.find(x => x.id === id)
     // 顾问只能操作自己的学生
     if (user.role === "counsellor" && s.counsellor !== user.counsellor) return
-    
+
     const newStatus = s.bonus_status === "Ready for Bonus" ? "Unpaid" : "Ready for Bonus"
-    await supabase.from('students').update({ 
-      bonus_status: newStatus, 
-      paid_at: null 
+    await supabase.from('students').update({
+      bonus_status: newStatus,
+      paid_at: null
     }).eq('id', id)
     await loadData()
   }
@@ -292,9 +294,25 @@ export default function Home() {
   async function markPaid(id) {
     const s = students.find(x => x.id === id)
     const newStatus = s.bonus_status === "Paid" ? "Unpaid" : "Paid"
-    await supabase.from('students').update({ 
-      bonus_status: newStatus, 
-      paid_at: newStatus === "Paid" ? new Date().toISOString() : null 
+    await supabase.from('students').update({
+      bonus_status: newStatus,
+      paid_at: newStatus === "Paid" ? new Date().toISOString() : null
+    }).eq('id', id)
+    await loadData()
+  }
+
+  // ==================== 緊急標記功能 ====================
+  async function toggleUrgent(id) {
+    const s = students.find(x => x.id === id)
+    // 顧問只能標記自己的學生
+    if (user.role === "counsellor" && s.counsellor !== user.counsellor) {
+      alert("您只能標記自己的學生")
+      return
+    }
+
+    const newUrgentStatus = !s.is_urgent
+    await supabase.from('students').update({
+      is_urgent: newUrgentStatus
     }).eq('id', id)
     await loadData()
   }
@@ -332,7 +350,8 @@ export default function Home() {
         visaExpiryDate: s.visa_expiry_date || "",
         tuition: s.tuition,
         bonus: s.bonus,
-        notes: s.notes || ""
+        notes: s.notes || "",
+        isUrgent: s.is_urgent || false
       })
     } else {
       setFormData({
@@ -347,7 +366,8 @@ export default function Home() {
         visaExpiryDate: "",
         tuition: "",
         bonus: settings.defaultBonus,
-        notes: ""
+        notes: "",
+        isUrgent: false
       })
     }
     setModalOpen(true)
@@ -396,12 +416,12 @@ export default function Home() {
         <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '32px' }}>
           <h1 style={{ textAlign: 'center', marginBottom: '8px' }}>留学招生 CRM</h1>
           <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '24px' }}>请登录</p>
-          
+
           <form onSubmit={handleLogin}>
             <div className="field" style={{ marginBottom: '16px' }}>
               <label>用户名</label>
-              <select 
-                value={loginForm.name} 
+              <select
+                value={loginForm.name}
                 onChange={e => setLoginForm({...loginForm, name: e.target.value})}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
                 required
@@ -411,11 +431,11 @@ export default function Home() {
                 {COUNSELLORS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            
+
             <div className="field" style={{ marginBottom: '24px' }}>
               <label>密码</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 placeholder="输入密码"
                 value={loginForm.password}
                 onChange={e => setLoginForm({...loginForm, password: e.target.value})}
@@ -423,13 +443,13 @@ export default function Home() {
                 required
               />
             </div>
-            
+
             {loginError && (
               <div style={{ color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
                 {loginError}
               </div>
             )}
-            
+
             <button type="submit" className="btn" style={{ width: '100%' }}>
               登录
             </button>
@@ -500,8 +520,8 @@ export default function Home() {
           <div className="section-head">
             <h2>学生管理</h2>
             <div className="filters filters-5">
-              <input placeholder="搜索学生 / 学校 / 课程 / ID" 
-                value={filters.search} 
+              <input placeholder="搜索学生 / 学校 / 课程 / ID"
+                value={filters.search}
                 onChange={e => setFilters({...filters, search: e.target.value})} />
               <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
                 <option value="All">All Status</option>
@@ -521,20 +541,20 @@ export default function Home() {
               </select>
             </div>
           </div>
-          
+
           {/* Manager 導出按鈕 */}
           {user.role === "manager" && (
             <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', padding: '12px', background: '#f8fafc', borderRadius: '12px', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, color: '#475569' }}>📊 報表導出:</span>
-              <button 
-                className="btn secondary" 
+              <button
+                className="btn secondary"
                 onClick={() => exportToCSV(getExportData(), getExportFilename())}
                 style={{ padding: '8px 14px', fontSize: '14px' }}
               >
                 📄 導出 CSV
               </button>
-              <button 
-                className="btn secondary" 
+              <button
+                className="btn secondary"
                 onClick={() => exportToExcel(getExportData(), getExportFilename())}
                 style={{ padding: '8px 14px', fontSize: '14px' }}
               >
@@ -545,7 +565,7 @@ export default function Home() {
               </span>
             </div>
           )}
-          
+
           <div className="table-wrap">
             <table>
               <thead>
@@ -566,7 +586,21 @@ export default function Home() {
               <tbody>
                 {visibleStudents.map(s => (
                   <tr key={s.id}>
-                    <td>{s.id}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          color: s.is_urgent ? '#dc2626' : 'inherit',
+                          fontWeight: s.is_urgent ? '700' : '500',
+                          background: s.is_urgent ? '#fef2f2' : 'transparent',
+                          padding: s.is_urgent ? '2px 6px' : '0',
+                          borderRadius: s.is_urgent ? '4px' : '0',
+                          border: s.is_urgent ? '1px solid #fecaca' : 'none'
+                        }}>
+                          {s.id}
+                          {s.is_urgent && ' 🔥'}
+                        </span>
+                      </div>
+                    </td>
                     <td>
                       <div><strong>{s.student_name}</strong></div>
                       <div style={{color:"#64748b",fontSize:12}}>{s.source}</div>
@@ -580,7 +614,7 @@ export default function Home() {
                     <td>{s.intake_date || "-"}</td>
                     <td>
                       {s.visa_expiry_date ? (
-                        <span style={{ 
+                        <span style={{
                           color: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '#dc2626' : '#475569',
                           fontWeight: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '600' : '400'
                         }}>
@@ -615,6 +649,18 @@ export default function Home() {
                           </button>
                         )}
                         <button className="small-btn" onClick={() => openModal(s.id)}>Edit</button>
+                        <button
+                          className="small-btn"
+                          onClick={() => toggleUrgent(s.id)}
+                          style={{
+                            background: s.is_urgent ? '#fef2f2' : '#fff',
+                            borderColor: s.is_urgent ? '#ef4444' : '#e2e8f0',
+                            color: s.is_urgent ? '#dc2626' : '#64748b'
+                          }}
+                          title={s.is_urgent ? "取消緊急標記" : "標記為緊急"}
+                        >
+                          {s.is_urgent ? '🔥 取消緊急' : '標記緊急'}
+                        </button>
                         {user.role === "manager" && (
                           <button className="small-btn danger" onClick={() => deleteStudent(s.id)}>Delete</button>
                         )}
@@ -634,15 +680,15 @@ export default function Home() {
           {/* 導出按鈕區域 */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', padding: '12px', background: '#f8fafc', borderRadius: '12px', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, color: '#475569' }}>📊 全部數據導出:</span>
-            <button 
-              className="btn secondary" 
+            <button
+              className="btn secondary"
               onClick={() => exportToCSV(students, `CRM-All-Data-${new Date().toISOString().split('T')[0]}`)}
               style={{ padding: '8px 14px', fontSize: '14px' }}
             >
               📄 導出全部 CSV
             </button>
-            <button 
-              className="btn secondary" 
+            <button
+              className="btn secondary"
               onClick={() => exportToExcel(students, `CRM-All-Data-${new Date().toISOString().split('T')[0]}`)}
               style={{ padding: '8px 14px', fontSize: '14px' }}
             >
@@ -652,7 +698,7 @@ export default function Home() {
               全部 {students.length} 條記錄
             </span>
           </div>
-          
+
           <div className="dashboard-grid">
             <div className="card">
               <h2>Pipeline overview</h2>
@@ -750,6 +796,19 @@ export default function Home() {
                 <select value={formData.bonus} onChange={e => setFormData({...formData, bonus: Number(e.target.value)})}>
                   {settings.bonusOptions.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
+              </div>
+              <div className="field" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={formData.isUrgent}
+                    onChange={e => setFormData({...formData, isUrgent: e.target.checked})}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: formData.isUrgent ? '#dc2626' : '#475569', fontWeight: formData.isUrgent ? '600' : '400' }}>
+                    🔥 標記為緊急
+                  </span>
+                </label>
               </div>
               <div className="field full"><label>Notes</label><textarea rows={4} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} /></div>
             </div>
