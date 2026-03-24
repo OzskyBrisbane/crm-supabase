@@ -12,7 +12,13 @@ function verifyLogin(name, password) {
   if (name === "Manager" && password === "admin123") {
     return { role: "manager", counsellor: null }
   }
-  if (COUNSELLORS.includes(name) && password === "123456") {
+  // 顧問密碼
+  const counsellorPasswords = {
+    "David": "ozsky2022",
+    "Ming": "ozsky0722",
+    "Jett": "Ozsky2025"
+  }
+  if (COUNSELLORS.includes(name) && counsellorPasswords[name] === password) {
     return { role: "counsellor", counsellor: name }
   }
   return null
