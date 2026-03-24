@@ -117,8 +117,14 @@ export default function Home() {
     const shouldCancelUrgent = student.status === "Enrolled" || student.status === "Lost"
     const finalIsUrgent = shouldCancelUrgent ? false : (student.isUrgent || false)
 
+    // 新增時生成 ID，編輯時用原有 ID
+    let studentId = student.id
+    if (!editingId || !studentId) {
+      studentId = await generateStudentID()
+    }
+
     let payload = {
-      id: student.id,
+      id: studentId,
       student_name: student.studentName,
       counsellor: saveCounsellor,
       school: student.school,
@@ -143,14 +149,11 @@ export default function Home() {
     } else {
       let result = await supabase.from('students').insert(payload)
       // 如果是 ID 衝突，自動重試生成新 ID
-      if (result.error && result.error.code === '23505') {
+      while (result.error && result.error.code === '23505') {
         console.log('ID 衝突，重新生成...')
         const newId = await generateStudentID()
         payload = { ...payload, id: newId }
         result = await supabase.from('students').insert(payload)
-        if (!result.error) {
-          setFormData({ ...formData, id: newId })
-        }
       }
       error = result.error
     }
@@ -397,9 +400,8 @@ export default function Home() {
         isUrgent: s.is_urgent || false
       })
     } else {
-      const newId = await generateStudentID()
       setFormData({
-        id: newId,
+        id: "",
         studentName: "",
         counsellor: user.role === "manager" ? COUNSELLORS[0] : user.counsellor,
         school: "",
@@ -821,7 +823,7 @@ export default function Home() {
               <button className="icon-btn" onClick={() => setModalOpen(false)}>✕</button>
             </div>
             <div className="form-grid">
-              <div className="field"><label>Student ID</label><input value={formData.id} disabled /></div>
+              <div className="field"><label>Student ID</label><input value={formData.id || "(自動生成)"} disabled style={{ color: formData.id ? 'inherit' : '#94a3b8' }} /></div>
               <div className="field"><label>Student name</label><input value={formData.studentName} onChange={e => setFormData({...formData, studentName: e.target.value})} /></div>
               {user.role === "manager" && (
                 <div className="field">
