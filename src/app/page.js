@@ -601,8 +601,10 @@ export default function Home() {
                   {user.role === "manager" && <th style={{minWidth: '80px'}}>顾问</th>}
                   <th style={{minWidth: '180px'}}>School / Course</th>
                   <th style={{minWidth: '100px'}}>Status</th>
-                  <th style={{minWidth: '100px'}}>Dates</th>
-                  <th style={{minWidth: '120px'}}>Bonus</th>
+                  <th style={{minWidth: '100px'}}>Intake</th>
+                  <th style={{minWidth: '100px'}}>Visa Expiry</th>
+                  <th style={{minWidth: '80px'}}>Bonus</th>
+                  <th style={{minWidth: '100px'}}>Bonus Status</th>
                   <th style={{minWidth: '150px'}}>Notes</th>
                   <th style={{minWidth: '180px'}}>Actions</th>
                 </tr>
@@ -635,37 +637,22 @@ export default function Home() {
                       <div style={{color:"#64748b",fontSize:12}}>{s.course}</div>
                     </td>
                     <td><span className={`badge ${s.status === "Enrolled" ? "ready" : ""}`}>{s.status}</span></td>
+                    <td>{s.intake_date || "-"}</td>
                     <td>
-                      <div style={{fontSize: '12px', lineHeight: '1.5'}}>
-                        <div>
-                          <span style={{color: '#64748b'}}>入學:</span> {s.intake_date || "-"}
-                        </div>
-                        <div>
-                          <span style={{color: '#64748b'}}>簽證:</span>{' '}
-                          {s.visa_expiry_date ? (
-                            <span style={{
-                              color: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '#dc2626' : 'inherit',
-                              fontWeight: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '600' : '400'
-                            }}>
-                              {s.visa_expiry_date}
-                              {new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) && '⚠️'}
-                            </span>
-                          ) : (
-                            "-"
-                          )}
-                        </div>
-                      </div>
+                      {s.visa_expiry_date ? (
+                        <span style={{
+                          color: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '#dc2626' : 'inherit',
+                          fontWeight: new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) ? '600' : '400'
+                        }}>
+                          {s.visa_expiry_date}
+                          {new Date(s.visa_expiry_date) < new Date(Date.now() + 30*24*60*60*1000) && ' ⚠️'}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
                     </td>
-                    <td>
-                      <div style={{fontSize: '13px'}}>
-                        <div>{currency(s.bonus)}</div>
-                        <div style={{marginTop: '4px'}}>
-                          <span className={`badge ${s.bonus_status === "Paid" ? "paid" : s.bonus_status === "Ready for Bonus" ? "ready" : ""}`}>
-                            {s.bonus_status}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
+                    <td>{currency(s.bonus)}</td>
+                    <td><span className={`badge ${s.bonus_status === "Paid" ? "paid" : s.bonus_status === "Ready for Bonus" ? "ready" : ""}`}>{s.bonus_status}</span></td>
                     <td>
                       <div style={{maxWidth: '200px', fontSize: '13px', color: '#475569', lineHeight: '1.4', whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
                         {s.notes ? (
