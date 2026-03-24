@@ -135,13 +135,27 @@ export default function Home() {
       is_urgent: finalIsUrgent
     }
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from('students')
       .upsert(payload, { onConflict: 'id' })
+
+    // 如果是新增且 ID 衝突，自動重試生成新 ID
+    if (error && !editingId && error.code === '23505') {
+      console.log('ID 衝突，重新生成...')
+      const newId = await generateStudentID()
+      payload.id = newId
+      const retry = await supabase.from('students').upsert(payload, { onConflict: 'id' })
+      error = retry.error
+      if (!error) {
+        setFormData({ ...formData, id: newId })
+      }
+    }
 
     if (!error) {
       await loadData()
       setModalOpen(false)
+    } else {
+      alert('保存失敗: ' + error.message)
     }
   }
 
