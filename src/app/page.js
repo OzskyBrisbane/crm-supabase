@@ -117,7 +117,7 @@ export default function Home() {
     const shouldCancelUrgent = student.status === "Enrolled" || student.status === "Lost"
     const finalIsUrgent = shouldCancelUrgent ? false : (student.isUrgent || false)
 
-    const payload = {
+    let payload = {
       id: student.id,
       student_name: student.studentName,
       counsellor: saveCounsellor,
@@ -143,7 +143,7 @@ export default function Home() {
     if (error && !editingId && error.code === '23505') {
       console.log('ID 衝突，重新生成...')
       const newId = await generateStudentID()
-      payload.id = newId
+      payload = { ...payload, id: newId }
       const retry = await supabase.from('students').upsert(payload, { onConflict: 'id' })
       error = retry.error
       if (!error) {
