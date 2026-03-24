@@ -331,11 +331,22 @@ export default function Home() {
     await loadData()
   }
 
-  function generateStudentID() {
+  async function generateStudentID() {
     const year = new Date().getFullYear()
+    // 從數據庫獲取所有學生ID（不只是當前用戶可見的）
+    const { data: allStudents, error } = await supabase
+      .from('students')
+      .select('id')
+      .ilike('id', `STU-${year}-%`)
+    
+    if (error) {
+      console.error('獲取學生ID失敗:', error)
+    }
+    
     const regex = new RegExp(`^STU-${year}-(\\d{4})$`)
     let maxNum = 0
-    students.forEach(s => {
+    const studentList = allStudents || students
+    studentList.forEach(s => {
       const m = String(s.id || "").match(regex)
       if (m) maxNum = Math.max(maxNum, Number(m[1]))
     })
@@ -348,7 +359,7 @@ export default function Home() {
     return "Unknown"
   }
 
-  function openModal(editId = null) {
+  async function openModal(editId = null) {
     setEditingId(editId)
     if (editId) {
       const s = students.find(x => x.id === editId)
@@ -368,8 +379,9 @@ export default function Home() {
         isUrgent: s.is_urgent || false
       })
     } else {
+      const newId = await generateStudentID()
       setFormData({
-        id: generateStudentID(),
+        id: newId,
         studentName: "",
         counsellor: user.role === "manager" ? COUNSELLORS[0] : user.counsellor,
         school: "",
