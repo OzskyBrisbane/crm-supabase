@@ -149,11 +149,17 @@ export default function Home() {
     } else {
       let result = await supabase.from('students').insert(payload)
       // 如果是 ID 衝突，自動重試生成新 ID
+      let retryCount = 0
       while (result.error && result.error.code === '23505') {
-        console.log('ID 衝突，重新生成...')
+        retryCount++
+        console.log(`ID 衝突，第${retryCount}次重試...`)
         const newId = await generateStudentID()
+        console.log(`重試生成新ID: ${newId}`)
         payload = { ...payload, id: newId }
         result = await supabase.from('students').insert(payload)
+      }
+      if (retryCount > 0) {
+        console.log(`重試${retryCount}次後成功`)
       }
       error = result.error
     }
@@ -371,7 +377,9 @@ export default function Home() {
       const m = String(s.id || "").match(regex)
       if (m) maxNum = Math.max(maxNum, Number(m[1]))
     })
-    return `STU-${year}-${String(maxNum + 1).padStart(4, "0")}`
+    const newId = `STU-${year}-${String(maxNum + 1).padStart(4, "0")}`
+    console.log('生成新ID:', newId, '基於最大號:', maxNum)
+    return newId
   }
 
   function getRecordYear(s) {
