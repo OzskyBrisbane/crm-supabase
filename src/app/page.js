@@ -135,20 +135,24 @@ export default function Home() {
       is_urgent: finalIsUrgent
     }
 
-    let { error } = await supabase
-      .from('students')
-      .upsert(payload, { onConflict: 'id' })
-
-    // 如果是新增且 ID 衝突，自動重試生成新 ID
-    if (error && !editingId && error.code === '23505') {
-      console.log('ID 衝突，重新生成...')
-      const newId = await generateStudentID()
-      payload = { ...payload, id: newId }
-      const retry = await supabase.from('students').upsert(payload, { onConflict: 'id' })
-      error = retry.error
-      if (!error) {
-        setFormData({ ...formData, id: newId })
+    // 新增用 insert（檢查衝突），編輯用 upsert
+    let error
+    if (editingId) {
+      const result = await supabase.from('students').upsert(payload, { onConflict: 'id' })
+      error = result.error
+    } else {
+      let result = await supabase.from('students').insert(payload)
+      // 如果是 ID 衝突，自動重試生成新 ID
+      if (result.error && result.error.code === '23505') {
+        console.log('ID 衝突，重新生成...')
+        const newId = await generateStudentID()
+        payload = { ...payload, id: newId }
+        result = await supabase.from('students').insert(payload)
+        if (!result.error) {
+          setFormData({ ...formData, id: newId })
+        }
       }
+      error = result.error
     }
 
     if (!error) {
