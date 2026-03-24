@@ -30,10 +30,10 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loginForm, setLoginForm] = useState({ name: "", password: "" })
   const [loginError, setLoginError] = useState("")
-  
+
   // 用户信息
   const [user, setUser] = useState({ role: "", counsellor: "" })
-  
+
   // CRM 数据
   const [students, setStudents] = useState([])
   const [settings] = useState({ defaultBonus: 500, bonusOptions: [250, 500] })
@@ -42,7 +42,7 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [filters, setFilters] = useState({ search: "", status: "All", source: "All", year: "All", bonusStatus: "All" })
-  
+
   const [formData, setFormData] = useState({
     id: "", studentName: "", counsellor: "", school: "", course: "",
     source: "Referral", status: "Lead", intakeDate: "", visaExpiryDate: "", tuition: "",
@@ -93,7 +93,7 @@ export default function Home() {
       .from('students')
       .select('*')
       .order('created_at', { ascending: false })
-    
+
     if (!error) {
       // 根据权限过滤数据
       let filtered = data || []
@@ -107,16 +107,16 @@ export default function Home() {
 
   async function saveStudent(student) {
     const old = editingId ? students.find(s => s.id === editingId) : null
-    
+
     // 顾问只能保存自己的学生
-    const saveCounsellor = user.role === "manager" 
-      ? student.counsellor 
+    const saveCounsellor = user.role === "manager"
+      ? student.counsellor
       : user.counsellor
-    
+
     // 如果狀態為 Enrolled 或 Lost，自動取消緊急標記
     const shouldCancelUrgent = student.status === "Enrolled" || student.status === "Lost"
     const finalIsUrgent = shouldCancelUrgent ? false : (student.isUrgent || false)
-    
+
     const payload = {
       id: student.id,
       student_name: student.studentName,
@@ -134,11 +134,11 @@ export default function Home() {
       notes: student.notes,
       is_urgent: finalIsUrgent
     }
-    
+
     const { error } = await supabase
       .from('students')
       .upsert(payload, { onConflict: 'id' })
-    
+
     if (!error) {
       await loadData()
       setModalOpen(false)
@@ -286,11 +286,11 @@ export default function Home() {
     const s = students.find(x => x.id === id)
     // 顾问只能操作自己的学生
     if (user.role === "counsellor" && s.counsellor !== user.counsellor) return
-    
+
     const newStatus = s.bonus_status === "Ready for Bonus" ? "Unpaid" : "Ready for Bonus"
-    await supabase.from('students').update({ 
-      bonus_status: newStatus, 
-      paid_at: null 
+    await supabase.from('students').update({
+      bonus_status: newStatus,
+      paid_at: null
     }).eq('id', id)
     await loadData()
   }
@@ -298,9 +298,9 @@ export default function Home() {
   async function markPaid(id) {
     const s = students.find(x => x.id === id)
     const newStatus = s.bonus_status === "Paid" ? "Unpaid" : "Paid"
-    await supabase.from('students').update({ 
-      bonus_status: newStatus, 
-      paid_at: newStatus === "Paid" ? new Date().toISOString() : null 
+    await supabase.from('students').update({
+      bonus_status: newStatus,
+      paid_at: newStatus === "Paid" ? new Date().toISOString() : null
     }).eq('id', id)
     await loadData()
   }
@@ -442,12 +442,12 @@ export default function Home() {
         <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '32px' }}>
           <h1 style={{ textAlign: 'center', marginBottom: '8px' }}>留学招生 CRM</h1>
           <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '24px' }}>请登录</p>
-          
+
           <form onSubmit={handleLogin}>
             <div className="field" style={{ marginBottom: '16px' }}>
               <label>用户名</label>
-              <select 
-                value={loginForm.name} 
+              <select
+                value={loginForm.name}
                 onChange={e => setLoginForm({...loginForm, name: e.target.value})}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
                 required
@@ -457,11 +457,11 @@ export default function Home() {
                 {COUNSELLORS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            
+
             <div className="field" style={{ marginBottom: '24px' }}>
               <label>密码</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 placeholder="输入密码"
                 value={loginForm.password}
                 onChange={e => setLoginForm({...loginForm, password: e.target.value})}
@@ -469,13 +469,13 @@ export default function Home() {
                 required
               />
             </div>
-            
+
             {loginError && (
               <div style={{ color: '#dc2626', marginBottom: '16px', textAlign: 'center' }}>
                 {loginError}
               </div>
             )}
-            
+
             <button type="submit" className="btn" style={{ width: '100%' }}>
               登录
             </button>
@@ -546,8 +546,8 @@ export default function Home() {
           <div className="section-head">
             <h2>学生管理</h2>
             <div className="filters filters-5">
-              <input placeholder="搜索学生 / 学校 / 课程 / ID" 
-                value={filters.search} 
+              <input placeholder="搜索学生 / 学校 / 课程 / ID"
+                value={filters.search}
                 onChange={e => setFilters({...filters, search: e.target.value})} />
               <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
                 <option value="All">All Status</option>
@@ -741,40 +741,40 @@ export default function Home() {
           <div className="dashboard-grid">
             <div className="card">
               <h2>Pipeline overview</h2>
-              {STATUSES.map(st => {
-                const count = students.filter(s => s.status === st).length
-                const total = students.length || 1
-                const pct = Math.round(count / total * 100)
-                return (
-                  <div className="pipeline-row" key={st}>
-                    <div style={{display:"flex",justifyContent:"space-between"}}>
-                      <span>{st}</span>
-                      <span style={{color:"#64748b"}}>{count} students</span>
-                    </div>
-                    <div className="progress"><div style={{width:`${pct}%`}}></div></div>
+            {STATUSES.map(st => {
+              const count = students.filter(s => s.status === st).length
+              const total = students.length || 1
+              const pct = Math.round(count / total * 100)
+              return (
+                <div className="pipeline-row" key={st}>
+                  <div style={{display:"flex",justifyContent:"space-between"}}>
+                    <span>{st}</span>
+                    <span style={{color:"#64748b"}}>{count} students</span>
                   </div>
-                )
-              })}
+                  <div className="progress"><div style={{width:`${pct}%`}}></div></div>
+                </div>
+              )
+            })}
             </div>
             <div className="card">
               <h2>顾问排行榜</h2>
-              {COUNSELLORS.map((c, i) => {
-                const mine = students.filter(s => s.counsellor === c)
-                const enrolled = mine.filter(s => s.status === "Enrolled")
-                const bonus = enrolled.reduce((a, s) => a + (s.bonus || settings.defaultBonus), 0)
-                return (
-                  <div className="rank-card" key={c}>
-                    <div style={{display:"flex",justifyContent:"space-between",gap:12}}>
-                      <div>
-                        <div style={{fontSize:12,color:"#64748b"}}>#{i+1}</div>
-                        <div style={{fontWeight:700}}>{c}</div>
-                        <div style={{fontSize:12,color:"#64748b"}}>{enrolled.length} enrolled / {mine.length} students</div>
-                      </div>
-                      <div style={{fontWeight:700}}>{currency(bonus)}</div>
+            {COUNSELLORS.map((c, i) => {
+              const mine = students.filter(s => s.counsellor === c)
+              const enrolled = mine.filter(s => s.status === "Enrolled")
+              const bonus = enrolled.reduce((a, s) => a + (s.bonus || settings.defaultBonus), 0)
+              return (
+                <div className="rank-card" key={c}>
+                  <div style={{display:"flex",justifyContent:"space-between",gap:12}}>
+                    <div>
+                      <div style={{fontSize:12,color:"#64748b"}}>#{i+1}</div>
+                      <div style={{fontWeight:700}}>{c}</div>
+                      <div style={{fontSize:12,color:"#64748b"}}>{enrolled.length} enrolled / {mine.length} students</div>
                     </div>
+                    <div style={{fontWeight:700}}>{currency(bonus)}</div>
                   </div>
-                )
-              })}
+                </div>
+              )
+            })}
             </div>
           </div>
         </>
