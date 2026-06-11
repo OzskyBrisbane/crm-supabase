@@ -41,7 +41,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("students")
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [filters, setFilters] = useState({ search: "", status: "All", source: "All", year: "All", bonusStatus: "All" })
+  const [filters, setFilters] = useState({ search: "", status: "All", counsellor: "All", source: "All", year: "All", bonusStatus: "All" })
 
   const [formData, setFormData] = useState({
     id: "", studentName: "", counsellor: "", school: "", course: "",
@@ -453,6 +453,7 @@ export default function Home() {
     if (filters.status !== "All" && s.status !== filters.status) return false
     if (filters.source !== "All" && s.source !== filters.source) return false
     if (filters.year !== "All" && getRecordYear(s) !== filters.year) return false
+    if (filters.counsellor !== "All" && s.counsellor !== filters.counsellor) return false
     if (filters.bonusStatus !== "All" && s.bonus_status !== filters.bonusStatus) return false
     return true
   })
@@ -934,7 +935,7 @@ export default function Home() {
         <div className="card">
           <div className="section-head">
             <h2>学生管理</h2>
-            <div className="filters filters-5">
+            <div className={`filters ${user.role === "manager" ? "filters-6" : "filters-5"}`}>
               <input placeholder="搜索学生 / 学校 / 课程 / ID"
                 value={filters.search}
                 onChange={e => setFilters({...filters, search: e.target.value})} />
@@ -942,6 +943,12 @@ export default function Home() {
                 <option value="All">All Status</option>
                 {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
+              {user.role === "manager" && (
+                <select value={filters.counsellor} onChange={e => setFilters({...filters, counsellor: e.target.value})}>
+                  <option value="All">All Counsellors</option>
+                  {COUNSELLORS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
               <select value={filters.source} onChange={e => setFilters({...filters, source: e.target.value})}>
                 <option value="All">All Sources</option>
                 {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
