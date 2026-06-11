@@ -78,14 +78,16 @@ export default function Home() {
     setIsLoggedIn(false)
     setUser({ role: "", counsellor: "" })
     localStorage.removeItem("crm_user")
+    setFilters({ search: "", status: "All", counsellor: "All", source: "All", year: "All", bonusStatus: "All" })
   }
 
   // 加载数据
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && user.role) {
+      setFilters({ search: "", status: "All", counsellor: "All", source: "All", year: "All", bonusStatus: "All" })
       loadData()
     }
-  }, [isLoggedIn])
+  }, [isLoggedIn, user.role])
 
   async function loadData() {
     setLoading(true)
